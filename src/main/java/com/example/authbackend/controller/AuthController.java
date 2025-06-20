@@ -3,6 +3,7 @@ package com.example.authbackend.controller;
 import com.example.authbackend.dto.response.UserResponse;
 import com.example.authbackend.entity.User;
 import com.example.authbackend.entity.VerificationCode;
+import com.example.authbackend.repository.UserRepository;
 import com.example.authbackend.repository.VerificationCodeRepository;
 import com.example.authbackend.service.AuthService;
 import com.example.authbackend.service.UserService;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // Allow all origins for CORS
 public class AuthController {
 
     @Autowired
@@ -35,7 +36,8 @@ public class AuthController {
 
     private final Map<String, Boolean> verifiedEmails = new ConcurrentHashMap<>();
 
-
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user){
@@ -64,6 +66,7 @@ public class AuthController {
         String token = userService.login(user.getEmail(), loginRequest.getPassword());
 
         if (token == null) {
+            System.out.println("Incorrect password for user: " + user.getEmail());
             return ResponseEntity.status(401).body("Incorrect password");
         }
 
@@ -88,9 +91,14 @@ public class AuthController {
 
     @PostMapping("/send-code")
     public ResponseEntity<?> sendVerificationCode(@RequestBody Map<String, String> request){
+
         String email = request.get("email");
         if (email == null || email.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Email không được để trống");
+        }
+
+        if (userRepository.existsByEmail(email)) {
+            return ResponseEntity.badRequest().body("Email đã tồn tại, vui lòng đăng nhập");
         }
 
         try {
