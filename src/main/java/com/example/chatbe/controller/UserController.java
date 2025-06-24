@@ -1,6 +1,7 @@
 package com.example.chatbe.controller;
 
 
+import com.example.chatbe.dto.group.GroupMessageHistoryResponse;
 import com.example.chatbe.dto.response.LatestConversationResponse;
 import com.example.chatbe.dto.single.CreateSingleConversationRequest;
 import com.example.chatbe.dto.single.SingleMessageHistoryResponse;
@@ -38,7 +39,7 @@ public class UserController {
     private final UserService userService;
     private final ConversationMemberRepository conversationMemberRepository;
 
-    private MessageRepository messageRepository;
+    private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final SessionManager sessionManager;
@@ -92,6 +93,8 @@ public class UserController {
                     .map(cm -> msg.getTimestamp().isAfter(cm.getLastReadAt() != null ? cm.getLastReadAt() : LocalDateTime.MIN))
                     .orElse(true);
 
+            User sender = msg.getSender();
+
             return new LatestConversationResponse(
                     conv.getId(),
                     type,
@@ -99,7 +102,10 @@ public class UserController {
                     avatar,
                     decryptedContent,
                     msg.getTimestamp(),
-                    isUnread
+                    isUnread,
+                    sender.getId(),
+                    sender.getFullName(),
+                    sender.getAvatarUrl()
             );
         }).toList();
 
@@ -194,7 +200,7 @@ public class UserController {
 
 
     @GetMapping("/group/history")
-    public ResponseEntity<List<String>> loadGroupChatHistory(
+    public ResponseEntity<List<GroupMessageHistoryResponse>> loadGroupChatHistory(
             @RequestParam Long userId,
             @RequestParam Long conversationId,
             @RequestParam(defaultValue = "0") int page,
@@ -202,7 +208,7 @@ public class UserController {
     ) {
         Optional<Conversation> conversationOpt = conversationRepository.findById(conversationId);
         if (conversationOpt.isEmpty() || conversationOpt.get().getType() != ConversationType.GROUP) {
-            return ResponseEntity.badRequest().body(List.of("Invalid group conversation"));
+            return ResponseEntity.badRequest().build();
         }
 
         Conversation conversation = conversationOpt.get();
@@ -219,17 +225,25 @@ public class UserController {
                 PageRequest.of(page, limit)
         );
 
-        List<String> decryptedMessages = messages.stream()
+        List<GroupMessageHistoryResponse> results = messages.stream()
                 .map(m -> {
+                    String decrypted;
                     try {
-                        return AesUtil.decrypt(m.getContent());
+                        decrypted = AesUtil.decrypt(m.getContent());
                     } catch (Exception e) {
-                        return "[Lỗi giải mã]";
+                        decrypted = "[Lỗi giải mã]";
                     }
+
+                    return new GroupMessageHistoryResponse(
+                            m.getSender().getId(),
+                            m.getSender().getFullName(),
+                            decrypted,
+                            m.getTimestamp()
+                    );
                 })
                 .toList();
 
-        return ResponseEntity.ok(decryptedMessages);
+        return ResponseEntity.ok(results);
     }
 
 }

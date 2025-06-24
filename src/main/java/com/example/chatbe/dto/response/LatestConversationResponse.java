@@ -13,7 +13,11 @@ public class LatestConversationResponse {
     private ConversationType type;
     private String name;
     private String avatar;
-    private String lastMessage;
+    private String content;
     private LocalDateTime timestamp;
-    private boolean isUnread;
+    private boolean unread;
+
+    private Long senderId;
+    private String senderName;
+    private String senderAvatar;
 }

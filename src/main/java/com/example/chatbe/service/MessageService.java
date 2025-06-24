@@ -1,5 +1,6 @@
 package com.example.chatbe.service;
 
+import com.example.chatbe.dto.ws.GroupMessageResponse;
 import com.example.chatbe.dto.ws.MessagePayLoad;
 import com.example.chatbe.dto.ws.SingleMessageResponse;
 import com.example.chatbe.dto.ws.WebSocketResponse;
@@ -123,18 +124,33 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        List<ConversationMember> members = conversationMemberRepository.findByConversation(conversation);
+        // Tạo object phản hồi
+        GroupMessageResponse resp = new GroupMessageResponse(
+                conversation.getId(),
+                sender.getId(),
+                sender.getFullName(),
+                sender.getAvatarUrl(),
+                content,
+                message.getTimestamp()
+        );
 
-        for (ConversationMember member : members) {
-            Long memberId = member.getUser().getId();
-            if (!memberId.equals(senderId) && sessionManager.isOnline(memberId)) {
-                try {
-                    sessionManager.getSession(memberId)
-                            .sendMessage(new TextMessage(content));
-                } catch (Exception e) {
-                    e.printStackTrace();
+        WebSocketResponse wsResp = new WebSocketResponse("GROUP", resp);
+
+        try {
+            String json = objectMapper.writeValueAsString(wsResp);
+            TextMessage textMessage = new TextMessage(json);
+
+            List<ConversationMember> members = conversationMemberRepository.findByConversation(conversation);
+
+            for (ConversationMember member : members) {
+                Long memberId = member.getUser().getId();
+                if (sessionManager.isOnline(memberId)) {
+                    sessionManager.getSession(memberId).sendMessage(textMessage);
                 }
             }
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

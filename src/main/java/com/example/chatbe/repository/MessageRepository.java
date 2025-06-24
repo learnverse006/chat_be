@@ -16,12 +16,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationOrderByTimestampDesc(Conversation conversation, Pageable pageable);
 
     @Query(value = """
-    SELECT DISTINCT ON (m.conversation_id) m.*
-    FROM message m
+    SELECT DISTINCT ON (m.conversation_id) *
+    FROM messages m
     WHERE m.conversation_id IN (:conversationIds)
-    ORDER BY m.conversation_id,           -- nhóm theo conversation
-             m.timestamp DESC,            -- tin mới nhất
-             m.id DESC                    -- ràng buộc duy nhất
+    ORDER BY m.conversation_id, m.timestamp DESC, m.id DESC
 """, nativeQuery = true)
     List<Message> findLatestMessages(@Param("conversationIds") List<Long> conversationIds);
 }
