@@ -5,6 +5,7 @@ import com.example.chatbe.dto.ws.WebSocketResponse;
 import com.example.chatbe.ws.handler.MessageDispatcher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -14,12 +15,17 @@ import org.springframework.web.socket.TextMessage;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 public class ChatHandler extends TextWebSocketHandler {
 
-    private final ObjectMapper objectMapper;
-    private final MessageDispatcher messageDispatcher;
-    private final SessionManager sessionManager;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private MessageDispatcher messageDispatcher;
+
+    @Autowired
+    private SessionManager sessionManager;
 
 
     @Override

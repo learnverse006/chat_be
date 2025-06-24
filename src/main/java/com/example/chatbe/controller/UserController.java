@@ -29,19 +29,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
-@RequiredArgsConstructor(onConstructor_ = {@Autowired})
 public class UserController {
 
     private final UserService userService;
     private final ConversationMemberRepository conversationMemberRepository;
 
-    @Autowired
     private MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
+    private final SessionManager sessionManager;
+
+
 
 
 
@@ -106,10 +108,7 @@ public class UserController {
 
 
     @GetMapping("/online-status")
-    public ResponseEntity<List<Long>> checkOnlineStatus(
-            @RequestParam List<Long> ids,
-            @Autowired SessionManager sessionManager
-    ) {
+    public ResponseEntity<List<Long>> checkOnlineStatus(@RequestParam List<Long> ids) {
         List<Long> onlineIds = ids.stream()
                 .filter(sessionManager::isOnline)
                 .toList();
