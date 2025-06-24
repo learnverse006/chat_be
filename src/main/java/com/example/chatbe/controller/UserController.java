@@ -3,6 +3,7 @@ package com.example.chatbe.controller;
 
 import com.example.chatbe.dto.response.LatestConversationResponse;
 import com.example.chatbe.dto.single.CreateSingleConversationRequest;
+import com.example.chatbe.dto.single.SingleMessageHistoryResponse;
 import com.example.chatbe.entity.Conversation;
 import com.example.chatbe.entity.ConversationMember;
 import com.example.chatbe.entity.Message;
@@ -154,45 +155,44 @@ public class UserController {
     }
 
     @GetMapping("/single/history")
-    public ResponseEntity<List<String>> loadSingleChatHistory(
-        @RequestParam Long senderId,
-        @RequestParam Long receiverId,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "20") int limit)
+    public ResponseEntity<List<SingleMessageHistoryResponse>> loadSingleChatHistory(
+            @RequestParam Long senderId,
+            @RequestParam Long receiverId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int limit)
     {
         Optional<Conversation> conversationOpt = conversationRepository
                 .findConversationBetweenUsers(senderId, receiverId, ConversationType.SINGLE);
         if (conversationOpt.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
+
         Conversation conversation = conversationOpt.get();
-
-        Optional<ConversationMember> memberOpt = conversationMemberRepository
-                .findByConversationIdAndUserId(conversation.getId(), senderId);
-
-        memberOpt.ifPresent(cm -> {
-            cm.setLastReadAt(LocalDateTime.now());
-            conversationMemberRepository.save(cm);
-        });
-
         List<Message> messages = messageRepository.findByConversationOrderByTimestampDesc(
                 conversation,
                 PageRequest.of(page, limit)
         );
 
-        List<String> decryptedMessages = messages.stream()
+        List<SingleMessageHistoryResponse> result = messages.stream()
                 .map(m -> {
+                    String decrypted;
                     try {
-                        return AesUtil.decrypt(m.getContent());
+                        decrypted = AesUtil.decrypt(m.getContent());
                     } catch (Exception e) {
-                        return "[Lỗi giải mã]";
+                        decrypted = "[Lỗi giải mã]";
                     }
+
+                    return new SingleMessageHistoryResponse(
+                            m.getSender().getId(),
+                            decrypted,
+                            m.getTimestamp()
+                    );
                 })
                 .toList();
 
-        return ResponseEntity.ok(decryptedMessages);
-
+        return ResponseEntity.ok(result);
     }
+
 
     @GetMapping("/group/history")
     public ResponseEntity<List<String>> loadGroupChatHistory(
