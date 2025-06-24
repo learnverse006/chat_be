@@ -6,6 +6,8 @@ import com.example.chatbe.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 @Component
 @RequiredArgsConstructor
 public class SingleMessageHandler implements MessageHandler{
@@ -18,7 +20,7 @@ public class SingleMessageHandler implements MessageHandler{
     }
 
     @Override
-    public void handleMessage(MessagePayLoad messagePayLoad) {
+    public void handleMessage(MessagePayLoad messagePayLoad) throws IOException {
         // Handle single message logic here
         messageService.handleSingleMessage(messagePayLoad);
     }

@@ -1,6 +1,8 @@
 package com.example.chatbe.service;
 
 import com.example.chatbe.dto.ws.MessagePayLoad;
+import com.example.chatbe.dto.ws.SingleMessageResponse;
+import com.example.chatbe.dto.ws.WebSocketResponse;
 import com.example.chatbe.entity.Conversation;
 import com.example.chatbe.entity.ConversationMember;
 import com.example.chatbe.entity.Message;
@@ -13,11 +15,14 @@ import com.example.chatbe.repository.MessageRepository;
 import com.example.chatbe.repository.UserRepository;
 import com.example.chatbe.util.AesUtil;
 import com.example.chatbe.ws.SessionManager;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,8 +35,9 @@ public class MessageService {
     private final ConversationMemberRepository conversationMemberRepository;
     private final MessageRepository messageRepository;
     private final SessionManager sessionManager;
+    private final ObjectMapper objectMapper;
 
-    public void handleSingleMessage(MessagePayLoad payload){
+    public void handleSingleMessage(MessagePayLoad payload) throws IOException {
         Long senderId = payload.getSenderId();
         Long receiverId = payload.getReceiverId();
         String content = payload.getContent();
@@ -70,12 +76,24 @@ public class MessageService {
 
         messageRepository.save(message);
 
-        if (sessionManager.isOnline(receiverId)) {
-            try {
-                sessionManager.getSession(receiverId)
-                        .sendMessage(new TextMessage(content));
-            } catch (Exception e) {
-                e.printStackTrace();
+        String decryptedContent = content;
+
+        SingleMessageResponse resp = new SingleMessageResponse(
+                conversation.getId(),
+                sender.getId(),
+                sender.getFullName(),
+                sender.getAvatarUrl(),
+                decryptedContent,
+                message.getTimestamp()
+        );
+
+        WebSocketResponse wsResp = new WebSocketResponse("SINGLE", resp);
+        String json = objectMapper.writeValueAsString(wsResp);
+        TextMessage textMessage = new TextMessage(json);
+
+        for (Long uid : List.of(senderId, receiverId)) {
+            if (sessionManager.isOnline(uid)) {
+                sessionManager.getSession(uid).sendMessage(textMessage);
             }
         }
     }

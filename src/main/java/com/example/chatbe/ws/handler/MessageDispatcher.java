@@ -5,6 +5,7 @@ import com.example.chatbe.enums.ConversationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.List;
 
 @Component
@@ -13,7 +14,7 @@ public class MessageDispatcher {
 
     private final List<MessageHandler> handlers;
 
-    public void dispatch(MessagePayLoad payload) {
+    public void dispatch(MessagePayLoad payload) throws IOException {
         ConversationType type = payload.getConversationType();
 
         for (MessageHandler handler : handlers) {
