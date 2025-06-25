@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chat-be
+    env: java
+    buildCommand: "./mvnw clean install"
+    startCommand: "java -jar target/*.jar"
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://ep-square-pond-a1qrcamw-pooler.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        value: neondb_owner
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: npg_1I9NLcubAJXF
+      - key: SPRING_MAIL_USERNAME
+        value: clonevclone05@gmail.com
+      - key: SPRING_MAIL_PASSWORD
+        value: iclm cuty nchx jbcu
